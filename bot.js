@@ -1,9 +1,10 @@
+require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 const path = require('path');
 
 const TOKEN = process.env.BOT_TOKEN;
-const ADMIN_ID = process.env.ADMIN_ID;
+const ADMIN_ID = Number(process.env.ADMIN_ID);
 
 if (!TOKEN || !ADMIN_ID) {
   console.error('Ошибка: BOT_TOKEN и ADMIN_ID должны быть в .env файле!');
@@ -44,6 +45,7 @@ const STEPS = [
 // /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
+console.log('Chat ID:', msg.chat.id, 'User ID:', msg.from.id);
   bot.sendMessage(chatId,
     `👋 Привет! Я бот для подачи заявок.\n\n` +
     `Нажми кнопку ниже чтобы начать заполнение заявки.`,
@@ -135,7 +137,8 @@ bot.on('message', (msg) => {
         `💬 *Discord:* ${app.discord}\n` +
         `📱 *Telegram:* ${app.telegram}`;
 
-      bot.sendMessage(ADMIN_ID, adminMsg, {
+console.log('Отправляю админу ID:', ADMIN_ID, typeof ADMIN_ID);     
+ bot.sendMessage(ADMIN_ID, adminMsg, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
