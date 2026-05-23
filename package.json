@@ -1,0 +1,14 @@
+{
+  "name": "telegram-applications-bot",
+  "version": "1.0.0",
+  "description": "Telegram бот для приёма заявок",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "dotenv": "^16.0.0"
+  }
+}
