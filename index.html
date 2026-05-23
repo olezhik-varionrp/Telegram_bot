@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>VarionRP Media — Заявки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #f0cc6e;
+    --gold-dark: #8a6a1f;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --dark: #0a0a0f;
+    --dark2: #111118;
+    --dark3: #1a1a24;
+    --dark4: #222230;
+    --text: #e8e0cc;
+    --text-dim: #8a8070;
+    --green: #27ae60;
+    --green-light: #2ecc71;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  .bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bg-canvas::before {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(192, 57, 43, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(201, 168, 76, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(10, 10, 15, 0.9) 0%, transparent 70%);
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse {
+    0% { transform: scale(1) rotate(0deg); }
+    100% { transform: scale(1.1) rotate(5deg); }
+  }
+
+  /* Grid lines */
+  .grid-lines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    background-image: 
+      linear-gradient(rgba(201, 168, 76, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201, 168, 76, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+  }
+
+  @keyframes gridMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+  }
+
+  /* Floating particles */
+  .particle {
+    position: fixed;
+    width: 2px;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: float linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-10vh) translateX(50px); opacity: 0; }
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0 0 80px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(180deg, rgba(10,10,15,0.98) 0%, rgba(10,10,15,0.8) 100%);
+    border-bottom: 2px solid var(--gold-dark);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+    animation: logoShine 3s ease-in-out infinite;
+  }
+
+  @keyframes logoShine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    50%, 100% { transform: translateX(100%) rotate(45deg); }
+  }
+
+  .header-text h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .header-text p {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    background: rgba(192, 57, 43, 0.2);
+    border: 1px solid var(--red);
+    color: var(--red-light);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: badgePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Nav tabs */
+  .nav {
+    display: flex;
+    background: var(--dark2);
+    border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+    padding: 0 20px;
+    gap: 0;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .nav-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  .nav-btn:not(.active):hover {
+    color: var(--text);
+  }
+
+  /* Pages */
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--gold), var(--red));
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding-left: 14px;
+  }
+
+  /* Form */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .form-label .num {
+    width: 18px;
+    height: 18px;
+    background: var(--gold-dark);
+    color: var(--dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .form-input, .form-textarea {
+    width: 100%;
+    background: var(--dark3);
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    border-color: var(--gold);
+    background: var(--dark4);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1), inset 0 0 20px rgba(201, 168, 76, 0.03);
+  }
+
+  .form-input::placeholder, .form-textarea::placeholder {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  .form-textarea {
+    resize: none;
+    height: 90px;
+    line-height: 1.5;
+  }
+
+  /* Submit button */
+  .btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border: none;
+    border-radius: 6px;
+    color: var(--dark);
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .btn-submit::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-submit:hover::before { left: 100%; }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(201, 168, 76, 0.4); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Status page */
+  .status-card {
+    background: var(--dark3);
+    border: 1px solid rgba(201, 168, 76, 0.15);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    animation: cardIn 0.4s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .status-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+  }
+
+  .status-card.pending::before { background: var(--gold); }
+  .status-card.accepted::before { background: var(--green); }
+  .status-card.rejected::before { background: var(--red); }
+
+  .status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .status-id {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .status-badge.pending { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+  .status-badge.accepted { background: rgba(39,174,96,0.15); color: var(--green-light); border: 1px solid rgba(39,174,96,0.3); }
+  .status-badge.rejected { background: rgba(192,57,43,0.15); color: var(--red-light); border: 1px solid rgba(192,57,43,0.3); }
+
+  .status-channel {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .status-date {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Admin list */
+  .admin-card {
+    background: var(--dark3);
+    border: 1px solid rgba(201, 168, 76, 0.1);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    animation: cardIn 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .admin-card:hover {
+    border-color: rgba(201, 168, 76, 0.3);
+    background: var(--dark4);
+  }
+
+  .admin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .admin-username {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .admin-channel {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .admin-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-accept, .btn-reject {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-accept {
+    background: rgba(39,174,96,0.2);
+    color: var(--green-light);
+    border: 1px solid rgba(39,174,96,0.4);
+  }
+
+  .btn-accept:hover { background: rgba(39,174,96,0.4); }
+
+  .btn-reject {
+    background: rgba(192,57,43,0.2);
+    color: var(--red-light);
+    border: 1px solid rgba(192,57,43,0.4);
+  }
+
+  .btn-reject:hover { background: rgba(192,57,43,0.4); }
+
+  /* Detail modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 200;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal.active { display: flex; align-items: flex-end; }
+
+  .modal-content {
+    width: 100%;
+    max-height: 85vh;
+    background: var(--dark2);
+    border-top: 2px solid var(--gold-dark);
+    border-radius: 16px 16px 0 0;
+    padding: 20px;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(201,168,76,0.3);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .detail-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .detail-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    min-width: 80px;
+    padding-top: 2px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+    word-break: break-all;
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--dark3);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    z-index: 300;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 40px;
+    color: var(--text-dim);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  .loading-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: loadDot 1.2s ease-in-out infinite;
+  }
+
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes loadDot {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% % { transform: scale(1); opacity: 1; }
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent);
+    margin: 20px 0;
+  }
+
+  /* Steps indicator */
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.2);
+    transition: all 0.3s;
+  }
+
+  .step-dot.active {
+    background: var(--gold);
+    width: 20px;
+    border-radius: 3px;
+  }
+
+  .step-dot.done { background: rgba(201,168,76,0.5); }
+</style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-canvas"></div>
+<div class="grid-lines"></div>
+
+<!-- Particles -->
+<div id="particles"></div>
+
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">VRP</div>
+      <div class="header-text">
+        <h1>VarionRP Media</h1>
+        <p>Медиа партнёрская программа</p>
+      </div>
+      <div class="header-badge" id="onlineBadge">● Live</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('apply')">Заявка</button>
+    <button class="nav-btn" onclick="showPage('status')">Статус</button>
+    <button class="nav-btn" id="adminNavBtn" style="display:none" onclick="showPage('admin')">Админ</button>
+  </div>
+
+  <!-- Apply Page -->
+  <div class="page active" id="page-apply">
+    <br>
+    <div class="section-title">Подать заявку</div>
+    <div class="section-sub">Заполни все поля для рассмотрения</div>
+
+    <div class="steps" id="stepsIndicator">
+      <div class="step-dot active" id="step0"></div>
+      <div class="step-dot" id="step1"></div>
+      <div class="step-dot" id="step2"></div>
+      <div class="step-dot" id="step3"></div>
+      <div class="step-dot" id="step4"></div>
+      <div class="step-dot" id="step5"></div>
+      <div class="step-dot" id="step6"></div>
+      <div class="step-dot" id="step7"></div>
+    </div>
+
+    <form id="applyForm">
+      <div class="form-group">
+        <label class="form-label"><span class="num">1</span> Название канала</label>
+        <input class="form-input" type="text" name="channelName" placeholder="Мой крутой канал" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">2</span> Ссылка на канал</label>
+        <input class="form-input" type="url" name="channelLink" placeholder="https://youtube.com/..." required>
+      </div>
+      <div class="divider"></div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">3</span> Реальное имя</label>
+        <input class="form-input" type="text" name="realName" placeholder="Олег" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">4</span> Возраст</label>
+        <input class="form-input" type="number" name="age" placeholder="18" min="10" max="99" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">5</span> Стаж на проекте</label>
+        <input class="form-input" type="text" name="playTime" placeholder="2 года" required>
+      </div>
+      <div class="divider"></div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">6</span> О себе и канале</label>
+        <textarea class="form-textarea" name="about" placeholder="Расскажи о себе и своём контенте..." required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">7</span> Discord</label>
+        <input class="form-input" type="text" name="discord" placeholder="username#1234" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="num">8</span> Telegram</label>
+        <input class="form-input" type="text" name="telegram" placeholder="@username" required>
+      </div>
+      <button type="submit" class="btn-submit" id="submitBtn">⚡ Отправить заявку</button>
+    </form>
+  </div>
+
+  <!-- Status Page -->
+  <div class="page" id="page-status">
+    <br>
+    <div class="section-title">Мои заявки</div>
+    <div class="section-sub">Статус рассмотрения</div>
+    <div id="statusList">
+      <div class="loading">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Page -->
+  <div class="page" id="page-admin">
+    <br>
+    <div class="section-title">Заявки</div>
+    <div class="section-sub">Панель администратора</div>
+    <div id="adminList">
+      <div class="loading">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal" id="detailModal" onclick="closeModal(event)">
+  <div class="modal-content">
+    <div class="modal-handle"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Telegram WebApp init
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#0a0a0f');
+    tg.setBackgroundColor('#0a0a0f');
+  }
+
+  const ADMIN_ID = 6919611704;
+  const userId = tg?.initDataUnsafe?.user?.id || 0;
+  const isAdmin = userId === ADMIN_ID;
+
+  // Show admin tab if admin
+  if (isAdmin) {
+    document.getElementById('adminNavBtn').style.display = 'block';
+  }
+
+  // Create particles
+  const particlesEl = document.getElementById('particles');
+  for (let i = 0; i < 15; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    particlesEl.appendChild(p);
+  }
+
+  // Navigation
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    event?.target?.classList.add('active');
+
+    if (name === 'status') loadStatus();
+    if (name === 'admin') loadAdmin();
+  }
+
+  // Toast
+  function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // Form steps indicator
+  const inputs = document.querySelectorAll('#applyForm input, #applyForm textarea');
+  inputs.forEach((input, i) => {
+    input.addEventListener('focus', () => {
+      document.querySelectorAll('.step-dot').forEach((d, j) => {
+        d.classList.remove('active', 'done');
+        if (j < i) d.classList.add('done');
+        if (j === i) d.classList.add('active');
+      });
+    });
+  });
+
+  // Submit form
+  document.getElementById('applyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Отправляем...';
+
+    const data = new FormData(e.target);
+    const app = {
+      id: Date.now(),
+      userId: userId,
+      username: tg?.initDataUnsafe?.user?.username || 'unknown',
+      firstName: tg?.initDataUnsafe?.user?.first_name || '',
+      date: new Date().toLocaleString('ru-RU'),
+      channelName: data.get('channelName'),
+      channelLink: data.get('channelLink'),
+      realName: data.get('realName'),
+      age: data.get('age'),
+      playTime: data.get('playTime'),
+      about: data.get('about'),
+      discord: data.get('discord'),
+      telegram: data.get('telegram'),
+      status: 'pending'
+    };
+
+    // Save to storage
+    try {
+      const existing = await getApps();
+      existing.push(app);
+      await window.storage?.set('applications', JSON.stringify(existing), true);
+    } catch(err) {}
+
+    // Send to bot via Telegram
+    if (tg) {
+      tg.sendData(JSON.stringify({ type: 'new_application', ...app }));
+    }
+
+    btn.disabled = false;
+    btn.textContent = '✅ Заявка отправлена!';
+    showToast('✅ Заявка успешно отправлена!');
+    e.target.reset();
+    
+    setTimeout(() => {
+      btn.textContent = '⚡ Отправить заявку';
+      showPage('status');
+    }, 2000);
+  });
+
+  // Get apps from storage
+  async function getApps() {
+    try {
+      const result = await window.storage?.get('applications', true);
+      return result ? JSON.parse(result.value) : [];
+    } catch { return []; }
+  }
+
+  // Load status page
+  async function loadStatus() {
+    const list = document.getElementById('statusList');
+    list.innerHTML = '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    
+    const apps = await getApps();
+    const myApps = apps.filter(a => String(a.userId) === String(userId));
+
+    if (myApps.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Заявок нет</div></div>';
+      return;
+    }
+
+    list.innerHTML = myApps.reverse().map((app, i) => `
+      <div class="status-card ${app.status}" style="animation-delay:${i*0.1}s">
+        <div class="status-header">
+          <span class="status-id">#${String(app.id).slice(-6)}</span>
+          <span class="status-badge ${app.status}">${statusText(app.status)}</span>
+        </div>
+        <div class="status-channel">📺 ${app.channelName}</div>
+        <div class="status-date">📅 ${app.date}</div>
+      </div>
+    `).join('');
+  }
+
+  // Load admin page
+  async function loadAdmin() {
+    if (!isAdmin) return;
+    const list = document.getElementById('adminList');
+    list.innerHTML = '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+
+    const apps = await getApps();
+    
+    if (apps.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Заявок нет</div></div>';
+      return;
+    }
+
+    list.innerHTML = apps.reverse().map((app, i) => `
+      <div class="admin-card" style="animation-delay:${i*0.08}s" onclick="showDetail(${app.id})">
+        <div class="admin-card-header">
+          <span class="admin-username">@${app.username}</span>
+          <span class="status-badge ${app.status}">${statusText(app.status)}</span>
+        </div>
+        <div class="admin-channel">📺 ${app.channelName} · 📅 ${app.date}</div>
+        ${app.status === 'pending' ? `
+        <div class="admin-actions" onclick="event.stopPropagation()">
+          <button class="btn-accept" onclick="updateStatus(${app.id}, 'accepted')">✅ Принять</button>
+          <button class="btn-reject" onclick="updateStatus(${app.id}, 'rejected')">❌ Отклонить</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // Show detail modal
+  async function showDetail(id) {
+    const apps = await getApps();
+    const app = apps.find(a => a.id === id);
+    if (!app) return;
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="section-title" style="font-size:18px;margin-bottom:16px">Заявка #${String(app.id).slice(-6)}</div>
+      <div class="detail-row"><span class="detail-label">Статус</span><span class="status-badge ${app.status}">${statusText(app.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Telegram</span><span class="detail-value">@${app.username}</span></div>
+      <div class="detail-row"><span class="detail-label">Канал</span><span class="detail-value">${app.channelName}</span></div>
+      <div class="detail-row"><span class="detail-label">Ссылка</span><span class="detail-value">${app.channelLink}</span></div>
+      <div class="detail-row"><span class="detail-label">Имя</span><span class="detail-value">${app.realName}</span></div>
+      <div class="detail-row"><span class="detail-label">Возраст</span><span class="detail-value">${app.age}</span></div>
+      <div class="detail-row"><span class="detail-label">Стаж</span><span class="detail-value">${app.playTime}</span></div>
+      <div class="detail-row"><span class="detail-label">О себе</span><span class="detail-value">${app.about}</span></div>
+      <div class="detail-row"><span class="detail-label">Discord</span><span class="detail-value">${app.discord}</span></div>
+      <div class="detail-row"><span class="detail-label">Дата</span><span class="detail-value">${app.date}</span></div>
+      ${app.status === 'pending' ? `
+      <div class="admin-actions" style="margin-top:16px">
+        <button class="btn-accept" onclick="updateStatus(${app.id},'accepted');closeModal()">✅ Принять</button>
+        <button class="btn-reject" onclick="updateStatus(${app.id},'rejected');closeModal()">❌ Отклонить</button>
+      </div>` : ''}
+    `;
+    document.getElementById('detailModal').classList.add('active');
+  }
+
+  function closeModal(event) {
+    if (!event || event.target === document.getElementById('detailModal')) {
+      document.getElementById('detailModal').classList.remove('active');
+    }
+  }
+
+  // Update status
+  async function updateStatus(id, status) {
+    const apps = await getApps();
+    const app = apps.find(a => a.id === id);
+    if (!app) return;
+    app.status = status;
+    await window.storage?.set('applications', JSON.stringify(apps), true);
+    showToast(status === 'accepted' ? '✅ Заявка принята!' : '❌ Заявка отклонена!');
+    loadAdmin();
+  }
+
+  function statusText(s) {
+    return s === 'pending' ? '⏳ На рассмотрении' : s === 'accepted' ? '✅ Принята' : '❌ Отклонена';
+  }
+</script>
+</body>
+</html>
