@@ -369,17 +369,20 @@ function showToast(msg, color) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// Storage helpers
+const API = 'http://192.168.0.249:3001';
+
 async function getApps() {
   try {
-    const r = await window.storage?.get('varionrp_apps', true);
-    return r ? JSON.parse(r.value) : [];
+    const r = await fetch(API + '/api/applications');
+    return await r.json();
   } catch { return []; }
 }
 
-async function saveApps(apps) {
-  try { await window.storage?.set('varionrp_apps', JSON.stringify(apps), true); }
-  catch(e) { console.error('Storage error:', e); }
+async function getUserApps() {
+  try {
+    const r = await fetch(API + '/api/applications/' + userId);
+    return await r.json();
+  } catch { return []; }
 }
 
 // Submit
@@ -404,7 +407,18 @@ document.getElementById('applyForm').addEventListener('submit', async (e) => {
   apps.push(app);
   await saveApps(apps);
 
-  if (tg) tg.sendData(JSON.stringify({ type: 'new_application', ...app }));
+  // Отправляем через API
+  try {
+    const response = await fetch('http://192.168.0.249:3001/api/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(app)
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error);
+  } catch(e) {
+    console.error('API error:', e);
+  }
 
   btn.disabled = false; btn.textContent = '✅ Заявка отправлена!';
   showToast('✅ Заявка успешно отправлена!', 'var(--neon-green)');
@@ -416,8 +430,7 @@ document.getElementById('applyForm').addEventListener('submit', async (e) => {
 async function loadStatus() {
   const list = document.getElementById('statusList');
   list.innerHTML = '<div class="ld"><div class="ld-d"></div><div class="ld-d"></div><div class="ld-d"></div></div>';
-  const apps = await getApps();
-  const mine = apps.filter(a => String(a.userId) === String(userId)).reverse();
+  const mine = (await getUserApps()).reverse();
   if (!mine.length) { list.innerHTML = '<div class="empty"><div class="ei">📋</div><div class="et">Заявок нет</div></div>'; return; }
   list.innerHTML = mine.map((a,i) => `
     <div class="sc ${a.status}" style="animation-delay:${i*.08}s">
@@ -470,18 +483,19 @@ function filterAdmin(f, btn) {
 }
 
 async function updateStatus(id, status) {
-  const apps = await getApps();
-  const app = apps.find(a => a.id === id);
-  if (!app) return;
-  app.status = status;
-  await saveApps(apps);
-  allApps = apps;
+  try {
+    const r = await fetch(API + '/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appId: id, status })
+    });
+    const result = await r.json();
+    if (!result.success) throw new Error('Failed');
+  } catch(e) { console.error('Status update error:', e); }
+  allApps = await getApps();
   showToast(status==='accepted'?'✅ Заявка принята!':'❌ Заявка отклонена!', status==='accepted'?'var(--neon-green)':'var(--neon-pink)');
   renderAdmin();
   closeModal();
-
-  // Notify bot
-  if (tg) tg.sendData(JSON.stringify({ type: 'status_update', appId: id, userId: app.userId, status }));
 }
 
 async function showDetail(id) {
