@@ -5,6 +5,7 @@ const path = require('path');
 
 const TOKEN = process.env.BOT_TOKEN;
 const ADMIN_ID = Number(process.env.ADMIN_ID);
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://olezhik-varionrp.github.io/Telegram_bot';
 
 if (!TOKEN || !ADMIN_ID) {
   console.error('Ошибка: BOT_TOKEN и ADMIN_ID должны быть в .env файле!');
@@ -13,15 +14,12 @@ if (!TOKEN || !ADMIN_ID) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// Хранение состояний пользователей
-const userStates = {};
-
-// Файл для хранения заявок
 const APPLICATIONS_FILE = path.join(__dirname, 'applications.json');
 
 function loadApplications() {
   if (!fs.existsSync(APPLICATIONS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(APPLICATIONS_FILE, 'utf8'));
+  try { return JSON.parse(fs.readFileSync(APPLICATIONS_FILE, 'utf8')); }
+  catch { return []; }
 }
 
 function saveApplication(app) {
@@ -30,171 +28,138 @@ function saveApplication(app) {
   fs.writeFileSync(APPLICATIONS_FILE, JSON.stringify(apps, null, 2));
 }
 
-// Шаги заявки
-const STEPS = [
-  { key: 'channelName',    question: '📺 Укажи название своего канала:' },
-  { key: 'channelLink',    question: '🔗 Укажи ссылку на канал (например https://t.me/mychannel):' },
-  { key: 'realName',       question: '👤 Как тебя зовут (реальное имя/никнейм ИРЛ)?:' },
-  { key: 'age',            question: '🎂 Сколько тебе лет?' },
-  { key: 'playTime',       question: '🎮 Сколько времени ты уже играешь на проекте?' },
-  { key: 'about',          question: '📝 Расскажи немного о себе и своём канале:' },
-  { key: 'discord',        question: '💬 Укажи свой Discord (например user#1234 или просто username):' },
-  { key: 'telegram',       question: '📱 Укажи свой Telegram username (например @username):' },
-];
+function updateApplicationStatus(id, status) {
+  const apps = loadApplications();
+  const app = apps.find(a => String(a.id) === String(id));
+  if (app) {
+    app.status = status;
+    fs.writeFileSync(APPLICATIONS_FILE, JSON.stringify(apps, null, 2));
+  }
+  return app;
+}
 
-// /start
+// /start — показываем кнопку открытия приложения
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-console.log('Chat ID:', msg.chat.id, 'User ID:', msg.from.id);
   bot.sendMessage(chatId,
-    `👋 Привет! Я бот для подачи заявок.\n\n` +
-    `Нажми кнопку ниже чтобы начать заполнение заявки.`,
+    `👋 Привет, ${msg.from.first_name}!\n\n` +
+    `Добро пожаловать в систему заявок *VarionRP Media*.\n\n` +
+    `Нажми кнопку ниже чтобы открыть приложение и подать заявку.`,
     {
+      parse_mode: 'Markdown',
       reply_markup: {
-        keyboard: [['📋 Подать заявку']],
-        resize_keyboard: true
+        inline_keyboard: [[
+          {
+            text: '📋 Открыть приложение',
+            web_app: { url: WEBAPP_URL }
+          }
+        ]]
       }
     }
   );
 });
 
-// Кнопка подать заявку
-bot.on('message', (msg) => {
+// Обработка данных из WebApp
+bot.on('web_app_data', (msg) => {
   const chatId = msg.chat.id;
-  const text = msg.text;
+  try {
+    const data = JSON.parse(msg.web_app_data.data);
 
-  if (!text) return;
-
-  // Начало заявки
-  if (text === '📋 Подать заявку') {
-    userStates[chatId] = { step: 0, data: {} };
-    bot.sendMessage(chatId,
-      `📋 Отлично! Начинаем заполнение заявки.\nОтвечай на вопросы по очереди.\n\n` +
-      STEPS[0].question,
-      { reply_markup: { remove_keyboard: true } }
-    );
-    return;
-  }
-
-  // Отмена
-  if (text === '/cancel') {
-    delete userStates[chatId];
-    bot.sendMessage(chatId, '❌ Заявка отменена.', {
-      reply_markup: {
-        keyboard: [['📋 Подать заявку']],
-        resize_keyboard: true
-      }
-    });
-    return;
-  }
-
-  // Процесс заполнения
-  if (userStates[chatId] !== undefined) {
-    const state = userStates[chatId];
-    const currentStep = STEPS[state.step];
-
-    // Сохраняем ответ
-    state.data[currentStep.key] = text;
-    state.step++;
-
-    // Следующий шаг или завершение
-    if (state.step < STEPS.length) {
-      bot.sendMessage(chatId, STEPS[state.step].question);
-    } else {
-      // Заявка завершена
+    if (data.type === 'new_application') {
       const app = {
-        id: Date.now(),
+        id: data.id || Date.now(),
         userId: msg.from.id,
         username: msg.from.username || 'нет username',
+        firstName: msg.from.first_name || '',
         date: new Date().toLocaleString('ru-RU'),
-        ...state.data
+        channelName: data.channelName,
+        channelLink: data.channelLink,
+        realName: data.realName,
+        age: data.age,
+        playTime: data.playTime,
+        about: data.about,
+        discord: data.discord,
+        telegram: data.telegram,
+        status: 'pending'
       };
 
       saveApplication(app);
 
       // Сообщение пользователю
       bot.sendMessage(chatId,
-        `✅ Заявка успешно отправлена!\n\nМы рассмотрим её и свяжемся с тобой.\nСпасибо!`,
-        {
-          reply_markup: {
-            keyboard: [['📋 Подать заявку']],
-            resize_keyboard: true
-          }
-        }
+        `✅ *Заявка успешно отправлена!*\n\n` +
+        `Мы рассмотрим её и свяжемся с тобой.\n` +
+        `Следи за статусом в приложении.`,
+        { parse_mode: 'Markdown' }
       );
 
       // Уведомление админу
       const adminMsg =
         `🆕 *Новая заявка #${app.id}*\n\n` +
-        `👤 От: @${app.username} (ID: ${app.userId})\n` +
+        `👤 От: @${app.username} (ID: \`${app.userId}\`)\n` +
         `📅 Дата: ${app.date}\n\n` +
         `📺 *Канал:* ${app.channelName}\n` +
         `🔗 *Ссылка:* ${app.channelLink}\n\n` +
         `👤 *Имя ИРЛ:* ${app.realName}\n` +
         `🎂 *Возраст:* ${app.age}\n` +
-        `🎮 *Стаж на проекте:* ${app.playTime}\n\n` +
+        `🎮 *Стаж:* ${app.playTime}\n\n` +
         `📝 *О себе:*\n${app.about}\n\n` +
         `💬 *Discord:* ${app.discord}\n` +
         `📱 *Telegram:* ${app.telegram}`;
 
-console.log('Отправляю админу ID:', ADMIN_ID, typeof ADMIN_ID);     
- bot.sendMessage(ADMIN_ID, adminMsg, {
+      console.log('Отправляю админу ID:', ADMIN_ID, typeof ADMIN_ID);
+
+      bot.sendMessage(ADMIN_ID, adminMsg, {
         parse_mode: 'Markdown',
         reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '✅ Принять', callback_data: `accept_${app.id}` },
-              { text: '❌ Отклонить', callback_data: `reject_${app.id}` }
-            ]
-          ]
+          inline_keyboard: [[
+            { text: '✅ Принять', callback_data: `accept_${app.id}_${app.userId}` },
+            { text: '❌ Отклонить', callback_data: `reject_${app.id}_${app.userId}` }
+          ]]
         }
       });
-
-      delete userStates[chatId];
     }
+  } catch(e) {
+    console.error('Ошибка обработки webapp data:', e);
   }
 });
 
-// Обработка кнопок принять/отклонить (для админа)
+// Кнопки принять/отклонить
 bot.on('callback_query', (query) => {
   const adminChatId = query.message.chat.id;
   if (String(adminChatId) !== String(ADMIN_ID)) return;
 
-  const [action, appId] = query.data.split('_');
-  const apps = loadApplications();
-  const app = apps.find(a => String(a.id) === appId);
+  const parts = query.data.split('_');
+  const action = parts[0];
+  const appId = parts[1];
+  const userChatId = parts[2];
 
-  if (!app) {
-    bot.answerCallbackQuery(query.id, { text: 'Заявка не найдена' });
-    return;
-  }
+  const app = updateApplicationStatus(appId, action === 'accept' ? 'accepted' : 'rejected');
 
   if (action === 'accept') {
-    bot.sendMessage(app.userId,
-      `✅ Поздравляем! Твоя заявка была *принята*! 🎉\n\nС тобой скоро свяжутся.`,
+    bot.sendMessage(userChatId,
+      `✅ *Поздравляем!* Твоя заявка была *принята*! 🎉\n\nС тобой скоро свяжутся.`,
       { parse_mode: 'Markdown' }
     );
     bot.answerCallbackQuery(query.id, { text: '✅ Заявка принята' });
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+    bot.editMessageReplyMarkup({ inline_keyboard: [[{ text: '✅ Принята', callback_data: 'done' }]] }, {
       chat_id: adminChatId,
       message_id: query.message.message_id
     });
-    bot.sendMessage(adminChatId, `✅ Заявка #${appId} принята. Пользователь уведомлён.`);
-  } else if (action === 'reject') {
-    bot.sendMessage(app.userId,
-      `❌ К сожалению, твоя заявка была *отклонена*.\n\nТы можешь подать новую заявку позже.`,
+  } else {
+    bot.sendMessage(userChatId,
+      `❌ К сожалению, твоя заявка была *отклонена*.\n\nТы можешь подать новую заявку позже через приложение.`,
       { parse_mode: 'Markdown' }
     );
     bot.answerCallbackQuery(query.id, { text: '❌ Заявка отклонена' });
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+    bot.editMessageReplyMarkup({ inline_keyboard: [[{ text: '❌ Отклонена', callback_data: 'done' }]] }, {
       chat_id: adminChatId,
       message_id: query.message.message_id
     });
-    bot.sendMessage(adminChatId, `❌ Заявка #${appId} отклонена. Пользователь уведомлён.`);
   }
 });
 
-// Команда /applications для админа — список всех заявок
+// /applications для админа
 bot.onText(/\/applications/, (msg) => {
   if (String(msg.chat.id) !== String(ADMIN_ID)) return;
   const apps = loadApplications();
@@ -202,12 +167,36 @@ bot.onText(/\/applications/, (msg) => {
     bot.sendMessage(msg.chat.id, '📭 Заявок пока нет.');
     return;
   }
-  bot.sendMessage(msg.chat.id, `📋 Всего заявок: *${apps.length}*\n\nПоследние 5:`, { parse_mode: 'Markdown' });
-  apps.slice(-5).forEach(app => {
+  bot.sendMessage(msg.chat.id, `📋 Всего заявок: *${apps.length}*`, { parse_mode: 'Markdown' });
+  apps.slice(-5).reverse().forEach(app => {
+    const status = app.status === 'accepted' ? '✅' : app.status === 'rejected' ? '❌' : '⏳';
     bot.sendMessage(msg.chat.id,
-      `#${app.id} — @${app.username}\n📺 ${app.channelName}\n📅 ${app.date}`,
+      `${status} #${app.id}\n@${app.username} — ${app.channelName}\n📅 ${app.date}`,
     );
   });
+});
+
+// /status для пользователя
+bot.onText(/\/status/, (msg) => {
+  const chatId = msg.chat.id;
+  const apps = loadApplications().filter(a => String(a.userId) === String(msg.from.id));
+  if (apps.length === 0) {
+    bot.sendMessage(chatId, '📭 У тебя нет заявок.\n\nПодай заявку через приложение!', {
+      reply_markup: {
+        inline_keyboard: [[{ text: '📋 Открыть приложение', web_app: { url: WEBAPP_URL } }]]
+      }
+    });
+    return;
+  }
+  const last = apps[apps.length - 1];
+  const status = last.status === 'accepted' ? '✅ Принята' : last.status === 'rejected' ? '❌ Отклонена' : '⏳ На рассмотрении';
+  bot.sendMessage(chatId,
+    `📋 *Последняя заявка:*\n\n` +
+    `📺 Канал: ${last.channelName}\n` +
+    `📅 Дата: ${last.date}\n` +
+    `Статус: ${status}`,
+    { parse_mode: 'Markdown' }
+  );
 });
 
 console.log('🤖 Бот запущен!');
